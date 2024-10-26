@@ -1,29 +1,15 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-
-app.use(express.static("dist"));
-
-// app.use(
-//   cors({
-//     origin: "http://localhost:5173",
-//     methods: ["GET", "POST", "PUT", "DELETE"],
-//     credentials: true,
-//   })
-// );
+require("dotenv").config();
+const Note = require("./models/notes");
 
 app.use(cors());
 
-const requestLogger = (req, res, next) => {
-  console.log("Method:", req.method);
-  console.log("Path:", req.path);
-  console.log("Body:", req.body);
-  console.log("------------------");
-  next();
-};
-
 app.use(express.json());
 // app.use(requestLogger);
+
+app.use(express.static("dist"));
 
 let notes = [
   {
@@ -54,33 +40,34 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/notes", (req, res) => {
-  res.json(notes);
+  Note.find({}).then((notes) => {
+    res.json(notes);
+  });
 });
 
 app.post("/api/notes", (req, res) => {
+  const body = req.body;
   if (!req.body.content) {
     return res.status(400).json({
       error: "Content Missing",
     });
   }
 
-  const note = {
-    content: req.body.content,
-    important: Boolean(req.body.important) || false,
-    id: String(generateId()),
-  };
+  const note = new Note({
+    content: body.content,
+    important: body.important || false,
+  });
 
-  notes = notes.concat(note);
-  res.json(note);
+  note.save().then((savedNote) => {
+    res.json(savedNote);
+  });
 });
 
 app.get("/api/notes/:id", (req, res) => {
   const { id } = req.params;
-  const note = notes.find((note) => note.id === id);
-  if (!note) {
-    return res.status(404).end();
-  }
-  res.json(note);
+  Note.findById(id).then((note) => {
+    res.json(note);
+  });
 });
 
 app.delete("/api/notes/:id", (req, res) => {
