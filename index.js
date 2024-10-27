@@ -45,7 +45,7 @@ app.get("/api/notes", (req, res) => {
   });
 });
 
-app.post("/api/notes", (req, res) => {
+app.post("/api/notes", (req, res, next) => {
   const body = req.body;
   if (!req.body.content) {
     return res.status(400).json({
@@ -63,12 +63,61 @@ app.post("/api/notes", (req, res) => {
   });
 });
 
-app.get("/api/notes/:id", (req, res) => {
+app.get("/api/notes/:id", (req, res, next) => {
   const { id } = req.params;
-  Note.findById(id).then((note) => {
-    res.json(note);
-  });
+  Note.findById(id)
+    .then((note) => {
+      if (note) {
+        res.json(note);
+      } else {
+        res.status(404).end();
+      }
+    })
+    .catch((err) => {
+      return next(err);
+    });
 });
+
+app.put("/api/notes/:id", (req, res, next) => {
+  const { id } = req.params;
+  const body = req.body;
+  const note = {
+    content: body.content,
+    important: body.important,
+  };
+
+  Note.findByIdAndUpdate(id, note, { new: true })
+    .then((updatedNote) => {
+      res.json(updatedNote);
+    })
+    .catch((err) => {
+      return next(err);
+    });
+});
+
+app.delete("/api/notes/:id", (req, res, next) => {
+  Note.findByIdAndDelete(req.params.id)
+    .then((deletedItem) => {
+      res.status(204).end();
+    })
+    .catch((error) => next(error));
+});
+
+// app.get("/api/notes/:id", (request, response) => {
+//   Note.findById(request.params.id)
+//     .then((note) => {
+//       if (note) {
+//         response.json(note);
+//       } else {
+//         response.status(404).end();
+//       }
+//     })
+//     .catch((error) => {
+//       console.log(error);
+
+//       response.status(400).send({ error: "malformatted id" });
+//     });
+// });
 
 app.delete("/api/notes/:id", (req, res) => {
   const { id } = req.params;
@@ -81,6 +130,16 @@ const unknownEndpoint = (req, res) => {
 };
 
 app.use(unknownEndpoint);
+
+const errorHandler = (error, req, res, next) => {
+  console.log(error.message, error.name);
+  if (error.name === "CastError") {
+    return res.status(400).send({ error: "Malformatted Id" });
+  }
+  next(error);
+};
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT);
