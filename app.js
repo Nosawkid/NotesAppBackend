@@ -1,6 +1,7 @@
 const config = require("./utils/config");
 const express = require("express");
 const app = express();
+require("express-async-errors");
 const cors = require("cors");
 const notesRouter = require("./controllers/notes");
 const logger = require("./utils/logger");
@@ -10,6 +11,8 @@ const {
   errorHandler,
   requestLogger,
 } = require("./utils/middleware");
+
+console.log(process.env.NODE_ENV);
 
 mongoose.set("strictQuery", false);
 logger.info("Connecting to", config.MONGODB_URI);
