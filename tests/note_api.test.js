@@ -5,12 +5,15 @@ const supertest = require("supertest");
 const app = require("../app");
 const Note = require("../models/notes");
 const helper = require("./test_helper");
+const User = require("../models/user");
+const bcrypt = require("bcrypt");
 
 const api = supertest(app);
 
 beforeEach(async () => {
   await Note.deleteMany({});
   await Note.insertMany(helper.initialNotes);
+  await User.deleteMany({});
 });
 describe("When there is initially some notes saved", () => {
   test("Notes are returned as JSON", async () => {
@@ -60,9 +63,17 @@ describe("Viewing a specific note", () => {
   // Adding
   describe("Addidtion of a new note", () => {
     test("A valid note can be added", async () => {
+      const passwordHash = await bcrypt.hash("mockpassword", 10);
+      const testUser = new User({
+        username: "testUser",
+        name: "Test User",
+        passwordHash,
+      });
+      const newUser = await testUser.save();
       const newNote = {
         content: "Test note 3",
         important: true,
+        userId: newUser._id,
       };
       await api
         .post("/api/notes")
@@ -77,15 +88,21 @@ describe("Viewing a specific note", () => {
     });
 
     test("A note without content won't be saved to database", async () => {
+      const passwordHash = await bcrypt.hash("mockpassword", 10);
+      const testUser = new User({
+        username: "testUser",
+        name: "Test User",
+        passwordHash,
+      });
+      const newUser = await testUser.save();
       const newNote = {
         important: true,
+        userId: newUser._id,
       };
 
       await api.post("/api/notes").send(newNote).expect(400);
 
       const notesAtEnd = await helper.notesInDb();
-      console.log(notesAtEnd);
-      console.log(helper.initialNotes.length);
 
       assert.strictEqual(notesAtEnd.length, helper.initialNotes.length);
     });
