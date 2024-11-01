@@ -12,6 +12,7 @@ const {
   requestLogger,
 } = require("./utils/middleware");
 const userRouter = require("./controllers/users");
+const loginRouter = require("./controllers/login");
 
 console.log(process.env.NODE_ENV);
 
@@ -33,6 +34,7 @@ app.use(express.static("dist"));
 app.use(requestLogger);
 app.use("/api/notes", notesRouter);
 app.use("/api/users", userRouter);
+app.use("/api/login", loginRouter);
 app.use(unknownEndpoint);
 
 app.use(errorHandler);

@@ -69,7 +69,16 @@ describe("Viewing a specific note", () => {
         name: "Test User",
         passwordHash,
       });
+
       const newUser = await testUser.save();
+      const loginResult = await api
+        .post("/api/login")
+        .send({ username: newUser.username, password: "mockpassword" })
+        .expect(200)
+        .expect("Content-Type", /application\/json/);
+
+      const token = loginResult.body.token;
+
       const newNote = {
         content: "Test note 3",
         important: true,
@@ -77,6 +86,7 @@ describe("Viewing a specific note", () => {
       };
       await api
         .post("/api/notes")
+        .set("Authorization", `Bearer ${token}`)
         .send(newNote)
         .expect(201)
         .expect("Content-Type", /application\/json/);
@@ -95,12 +105,23 @@ describe("Viewing a specific note", () => {
         passwordHash,
       });
       const newUser = await testUser.save();
+      const loginResult = await api
+        .post("/api/login")
+        .send({ username: newUser.username, password: "mockpassword" })
+        .expect(200)
+        .expect("Content-Type", /application\/json/);
+
+      const token = loginResult.body.token;
       const newNote = {
         important: true,
         userId: newUser._id,
       };
 
-      await api.post("/api/notes").send(newNote).expect(400);
+      await api
+        .post("/api/notes")
+        .send(newNote)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(400);
 
       const notesAtEnd = await helper.notesInDb();
 
